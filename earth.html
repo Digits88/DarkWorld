@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="css/reset.css" />
+        <script src="js/three.min.js"></script>
+        <script src="js/controls/OrbitControls.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+        <script>
+            
+            var scene, camera, renderer, container, controls;
+            var earth, clouds, sun;
+            
+            var clock = new THREE.Clock();
+            
+            function init() {
+                container = document.createElement('div');
+                
+                createScene();
+                
+                // code
+                createEarth();
+
+                camera.position.z = 50;
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                window.addEventListener('resize', onWindowResize, false);
+            }
+            
+            function createScene() {
+                scene = new THREE.Scene();
+                scene.add( new THREE.AmbientLight( 0x505050 ) );
+                
+//                var light = new THREE.PointLight( 0xffffff, 1, 300 );
+//                light.position.set( 50, 50, 50 );
+//                scene.add( light );
+                
+                var geometry   = new THREE.SphereGeometry(50, 32, 32);
+                var material  = new THREE.MeshPhongMaterial({
+                    color: 0xfff000, 
+//                    emissive: 0xffffff, 
+//                    transparent:   true,
+//                    blending: THREE.AdditiveBlending,
+//                    wireframe: true,
+                    shading: THREE.SmoothShading,
+                    map: THREE.ImageUtils.loadTexture('textures/planets/sun/sunmap.jpg')
+                });
+                var sunSphere = new THREE.Mesh( geometry, material );
+                sun = new THREE.PointLight( 0xffffff, 1, 300 );
+                sun.add(sunSphere);
+                sun.position.set( 75, 0.0001, 75 );
+                scene.add( sun );
+                
+                // camera
+                camera = new THREE.PerspectiveCamera( 45, window.innerWidth/window.innerHeight, 1, 1000 );
+                scene.add(camera);
+                
+                // renderer
+                renderer = new THREE.WebGLRenderer({antialias: true});
+                renderer.setClearColor(0xdcdcd0);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.sortObjects = false;
+                document.body.appendChild( renderer.domElement );
+            }
+            
+            function createEarth() {
+                var geometry   = new THREE.SphereGeometry(10, 32, 32);
+                var material  = new THREE.MeshPhongMaterial({color: 0xffffff});
+                material.map    = THREE.ImageUtils.loadTexture('textures/planets/earth/earthmap1k.jpg');
+                material.bumpMap = THREE.ImageUtils.loadTexture('textures/planets/earth/earthbump1k.jpg');
+                material.bumpScale = 0.5;
+                material.specularMap    = THREE.ImageUtils.loadTexture('textures/planets/earth/earthspec1k.jpg')
+                material.specular  = new THREE.Color('grey')
+                earth = new THREE.Mesh(geometry, material);
+                clouds = getClouds();
+                earth.add(clouds);
+                scene.add(earth);
+            }
+            
+            function getClouds() {
+                
+                var geometry   = new THREE.SphereGeometry(10.1, 32, 32);
+                var material = new THREE.MeshPhongMaterial({
+                    map: THREE.ImageUtils.loadTexture('textures/planets/earth/earthcloudmapmasked.png'),
+                    side: THREE.DoubleSide,
+                    opacity: 0.8,
+                    transparent: true,
+                    depthWrite: false
+                });
+                
+                return new THREE.Mesh(geometry, material);
+            }
+            
+            var count = 0.0001;
+            function update() {
+                
+                var time = Date.now() * 0.0005;
+                var delta = clock.getDelta();
+                count += 0.001;
+                
+                // update
+                earth.rotation.y += 1/32 * delta;
+                clouds.rotation.y += 1/16 * delta;
+                clouds.rotation.x = Math.sin(clouds.rotation.y) / 20;
+                var upVector = new THREE.Vector3( -3, 8, 4 );
+                var axis = earth.position.clone().sub(upVector).normalize();
+                sun.position.applyAxisAngle( axis, -0.003 );
+                sun.rotation.y += 0.001;
+                
+            }
+            
+            function animate() {
+                requestAnimationFrame( animate );
+                update();
+                renderer.render(scene, camera);
+                controls.update();
+            }
+            
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            
+                
+        </script>
+        <script>
+            (function($) {
+                $(window).load(function() {
+                    init();
+                    animate();
+                    console.log('started')
+                });
+            })(jQuery);
+        </script>
+    </head>
+    <body>
+        <div class="container"></div>
+    </body>
+</html>
